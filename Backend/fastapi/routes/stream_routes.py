@@ -152,8 +152,11 @@ async def watch_handler(request: Request, id: str, name: str):
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{name} - Premium Cinema</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#10002b">
+    <title>{name} - Stream</title>
     
     <!-- External Assets -->
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -189,7 +192,8 @@ async def watch_handler(request: Request, id: str, name: str):
             display: grid;
             place-items: center;
             color: white;
-            padding: 20px;
+            padding: 20px 10px;
+            overflow-x: hidden;
         }}
         
         .container {{
@@ -216,17 +220,18 @@ async def watch_handler(request: Request, id: str, name: str):
         
         h1 {{
             font-weight: 800;
-            font-size: 2.2rem;
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
             margin-bottom: 10px;
             background: linear-gradient(to right, #fff, #e0aaff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -1px;
+            line-height: 1.2;
         }}
         
         .filename-badge {{
             background: rgba(0,0,0,0.3);
-            display: inline-block;
+           display: inline-block;
             padding: 6px 16px;
             border-radius: 50px;
             font-size: 0.9rem;
@@ -259,16 +264,16 @@ async def watch_handler(request: Request, id: str, name: str):
         /* Controls Grid */
         .controls-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
             margin-top: 20px;
         }}
 
         .action-btn {{
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--surface-border);
-            padding: 16px;
-            border-radius: 16px;
+            padding: 18px;
+            border-radius: 14px;
             color: white;
             text-decoration: none;
             display: flex;
