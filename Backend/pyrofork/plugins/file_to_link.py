@@ -205,18 +205,27 @@ async def link_command_handler(client: Client, message: Message):
         download_link = f"{Telegram.BASE_URL}/dl/{encoded_data}/{file_name}"
         watch_link = f"{Telegram.BASE_URL}/watch/{encoded_data}/{file_name}"
         
-        # Send both links to user
+        
+        # Create inline keyboard with buttons
+        keyboard = [
+            [
+                types.InlineKeyboardButton("▶️ Stream Online", url=watch_link),
+                types.InlineKeyboardButton("📥 Download", url=download_link)
+            ]
+        ]
+        reply_markup = types.InlineKeyboardMarkup(keyboard)
+        
+        # Send message with inline buttons
         await message.reply_text(
             "✅ **Your links are ready!**\n\n"
-            f"📁 **File:** `{original_name}`\n\n"
-            f"🎬 **Watch Online:**\n`{watch_link}`\n\n"
-            f"📥 **Direct Download:**\n`{download_link}`\n\n"
-            "💡 **Note:** Both links are permanent and will work as long as the file remains in storage.\n"
-            "• Use the Watch link to stream in your browser\n"
-            "• Use the Download link for direct downloads or external players",
+            f"📁 **File:** `{original_name}`\n"
+            f"📦 **Size:** `{file_info.get('file_size_str', 'Unknown')}`\n\n"
+            "💡 Choose an option below:\n"
+            "• **Stream Online** - Watch in browser with Cast support\n"
+            "• **Download** - Direct download or use with external players",
             quote=True,
             parse_mode=enums.ParseMode.MARKDOWN,
-            disable_web_page_preview=True
+            reply_markup=reply_markup
         )
         
         LOGGER.info(f"Link generated for user {user_id}: {file_name}")

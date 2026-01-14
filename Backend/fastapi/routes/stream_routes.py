@@ -316,10 +316,106 @@ async def watch_handler(request: Request, id: str, name: str):
             100% {{ opacity: 1; transform: scale(1); }}
         }}
 
-        @media (max-width: 768px) {{
-            .glass-panel {{ padding: 20px; }}
+        /* Responsive Design for All Devices */
+        
+        /* Desktop & Laptop (992px - 1199px) */
+        @media (max-width: 1199px) {{
+            .container {{ max-width: 960px; }}
+        }}
+        
+        /* Tablet Landscape (768px - 991px) */
+        @media (max-width: 991px) {{
+            .container {{ max-width: 720px; }}
+            .glass-panel {{ padding: 30px; }}
+            h1 {{ font-size: 2rem; }}
+            .controls-grid {{ 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 12px;
+            }}
+        }}
+        
+        /* Tablet Portrait & Large Mobile (576px - 767px) */
+        @media (max-width: 767px) {{
+            .glass-panel {{ padding: 24px 20px; }}
+            h1 {{ font-size: 1.75rem; }}
+            .filename-badge {{ 
+                font-size: 0.85rem; 
+                padding: 5px 14px;
+                max-width: 95%;
+            }}
+            .video-container {{ margin-bottom: 24px; }}
+            .controls-grid {{ 
+                grid-template-columns: 1fr; 
+                gap: 10px;
+            }}
+            .action-btn {{
+                height: 52px;
+                font-size: 0.9rem;
+                padding: 14px;
+            }}
+            .footer {{ 
+                font-size: 0.7rem; 
+                margin-top: 30px;
+            }}
+        }}
+        
+        /* Mobile Landscape (481px - 575px) */
+        @media (max-width: 575px) {{
+            body {{ padding: 15px; }}
+            .glass-panel {{ 
+                padding: 20px 16px; 
+                border-radius: 20px;
+            }}
             h1 {{ font-size: 1.5rem; }}
-            .controls-grid {{ grid-template-columns: 1fr; }}
+            .video-container {{ 
+                border-radius: 14px;
+                margin-bottom: 20px;
+            }}
+            .controls-grid {{ margin-top: 16px; }}
+        }}
+        
+        /* Mobile Portrait (320px - 480px) */
+        @media (max-width: 480px) {{
+            body {{ padding: 10px; }}
+            .glass-panel {{ 
+                padding: 16px 12px;
+                border-radius: 16px;
+            }}
+            h1 {{ 
+                font-size: 1.3rem;
+                margin-bottom: 8px;
+            }}
+            .filename-badge {{ 
+                font-size: 0.8rem;
+                padding: 4px 12px;
+            }}
+            .action-btn {{
+                height: 48px;
+                font-size: 0.85rem;
+                gap: 8px;
+                padding: 12px;
+            }}
+            .action-btn svg {{ 
+                width: 20px; 
+                height: 20px; 
+            }}
+            .footer {{ 
+                font-size: 0.65rem;
+                margin-top: 24px;
+                letter-spacing: 0.5px;
+            }}
+        }}
+        
+        /* Touch Device Optimizations */
+        @media (hover: none) and (pointer: coarse) {{
+            .action-btn {{
+                min-height: 48px;
+                padding: 16px;
+            }}
+            .action-btn:active {{
+                background: rgba(255,255,255,0.15);
+                transform: scale(0.98);
+            }}
         }}
     </style>
 </head>
