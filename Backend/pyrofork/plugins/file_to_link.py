@@ -1,5 +1,5 @@
 from pyrogram import filters, Client, enums
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import FloodWait
 from Backend.config import Telegram
 from Backend.helper.encrypt import encode_string
@@ -209,11 +209,11 @@ async def link_command_handler(client: Client, message: Message):
         # Create inline keyboard with buttons
         keyboard = [
             [
-                types.InlineKeyboardButton("▶️ Stream Online", url=watch_link),
-                types.InlineKeyboardButton("📥 Download", url=download_link)
+                InlineKeyboardButton("▶️ Stream Online", url=watch_link),
+                InlineKeyboardButton("📥 Download", url=download_link)
             ]
         ]
-        reply_markup = types.InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
         # Send message with inline buttons
         await message.reply_text(
