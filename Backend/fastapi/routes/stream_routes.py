@@ -389,14 +389,14 @@ async def watch_handler(request: Request, id: str, name: str):
 
         // Chromecast Implementation
         // Plyr handles the session logic automatically when 'google-cast' is in controls
-        window.__onGCastApiAvailable = function(isAvailable) {
-            if (isAvailable) {
-                cast.framework.CastContext.getInstance().setOptions({
+        window.__onGCastApiAvailable = function(isAvailable) {{
+            if (isAvailable) {{
+                cast.framework.CastContext.getInstance().setOptions({{
                     receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
                     autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-                });
-            }
-        };
+                }});
+            }}
+        }};
     </script>
 </body>
 </html>
