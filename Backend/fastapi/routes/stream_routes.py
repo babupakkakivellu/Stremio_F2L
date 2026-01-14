@@ -134,232 +134,226 @@ async def watch_handler(request: Request, id: str, name: str):
         # Construct the streaming URL
         stream_url = f"{base_url}/dl/{id}/{name}"
         
-        # HTML5 Video Player Page (Premium Version)
+        # HTML5 Video Player Page (Ultra-Premium Version)
         html_content = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{name} - Premium Player</title>
+    <title>{name} - Premium Cinema</title>
     
     <!-- External Assets -->
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     
     <style>
         :root {{
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-main: #ffffff;
-            --text-muted: rgba(255, 255, 255, 0.7);
+            --primary: #9d4edd;
+            --primary-gradient: linear-gradient(135deg, #9d4edd 0%, #3c096c 100%);
+            --bg-dark: #10002b;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e0aaff;
+            --text-muted: #c77dff;
         }}
 
         * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
         }}
         
         body {{
-            background: #0f0c29;
-            background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29);
-            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: grid;
+            place-items: center;
+            color: white;
             padding: 20px;
-            color: var(--text-main);
-            overflow-x: hidden;
         }}
         
         .container {{
-            max-width: 1000px;
             width: 100%;
-            z-index: 1;
+            max-width: 1100px;
+            animation: fadeScale 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }}
+
+        .glass-panel {{
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--surface-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.4);
         }}
         
         .header {{
             text-align: center;
-            margin-bottom: 40px;
-            animation: fadeInDown 0.8s ease-out;
-        }}
-        
-        .header h1 {{
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 12px;
-            background: linear-gradient(to right, #fff, #a5a5a5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-        
-        .filename {{
-            font-size: 1rem;
-            color: var(--text-muted);
-            background: var(--glass-bg);
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            max-width: 90%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }}
-        
-        .player-card {{
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            padding: 10px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: zoomIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin-bottom: 30px;
             position: relative;
         }}
-
-        /* Plyr Customizations */
-        .plyr {{
-            border-radius: 18px;
+        
+        h1 {{
+            font-weight: 800;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, #e0aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }}
+        
+        .filename-badge {{
+            background: rgba(0,0,0,0.3);
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border: 1px solid var(--surface-border);
+            max-width: 100%;
             overflow: hidden;
-            --plyr-color-main: #764ba2;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }}
-        
-        .controls-panel {{
-            margin-top: 30px;
-            display: flex;
-            flex-wrap: wrap;
+
+        /* Video Player Wrapper */
+        .video-container {{
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            background: #000;
+            aspect-ratio: 16/9;
+            position: relative;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }}
+
+        video {{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }}
+
+        /* Controls Grid */
+        .controls-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
-            justify-content: center;
-            animation: fadeInUp 0.8s ease-out;
+            margin-top: 20px;
         }}
-        
-        .btn {{
-            padding: 14px 28px;
-            border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--glass-bg);
+
+        .action-btn {{
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--surface-border);
+            padding: 16px;
+            border-radius: 16px;
             color: white;
-            backdrop-filter: blur(10px);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 60px;
         }}
-        
-        .btn:hover {{
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-3px);
-            border-color: rgba(255, 255, 255, 0.4);
+
+        .action-btn:hover {{
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+            border-color: rgba(157, 78, 221, 0.5);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }}
-        
-        .btn-primary {{
+
+        .action-btn.primary {{
             background: var(--primary-gradient);
             border: none;
         }}
         
-        .btn-primary:hover {{
-            box-shadow: 0 10px 25px rgba(118, 75, 162, 0.4);
+        .action-btn.primary:hover {{
+            box-shadow: 0 10px 30px rgba(157, 78, 221, 0.4);
         }}
 
-        /* Cast Button */
+        /* Google Cast Customization */
         google-cast-launcher {{
-           --connected-color: #764ba2;
-           --disconnected-color: #ffffff;
-           width: 32px;
-           height: 32px;
-           cursor: pointer;
-           display: inline-block;
-           vertical-align: middle;
+            width: 24px;
+            height: 24px;
+            --connected-color: #fff;
+            --disconnected-color: #e0aaff;
         }}
-
-        .cast-wrapper {{
+        
+        .cast-btn-wrapper {{
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 15px;
-            background: var(--glass-bg);
-            padding: 10px 20px;
-            border-radius: 14px;
-            border: 1px solid var(--glass-border);
+            justify-content: center;
+            gap: 10px;
         }}
 
-        .info-footer {{
+        /* Footer */
+        .footer {{
             margin-top: 40px;
             text-align: center;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            letter-spacing: 0.05em;
+            opacity: 0.5;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }}
 
-        /* Animations */
-        @keyframes fadeInDown {{
-            from {{ opacity: 0; transform: translateY(-20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-        @keyframes fadeInUp {{
-            from {{ opacity: 0; transform: translateY(20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-        @keyframes zoomIn {{
-            from {{ opacity: 0; transform: scale(0.95); }}
-            to {{ opacity: 1; transform: scale(1); }}
+        @keyframes fadeScale {{
+            0% {{ opacity: 0; transform: scale(0.95); }}
+            100% {{ opacity: 1; transform: scale(1); }}
         }}
 
-        @media (max-width: 640px) {{
-            .header h1 {{ font-size: 1.8rem; }}
-            .btn {{ width: 100%; justify-content: center; }}
-            .container {{ padding: 10px; }}
+        @media (max-width: 768px) {{
+            .glass-panel {{ padding: 20px; }}
+            h1 {{ font-size: 1.5rem; }}
+            .controls-grid {{ grid-template-columns: 1fr; }}
         }}
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>Premium Stream</h1>
-            <div class="filename" title="{name}">{name}</div>
-        </header>
-        
-        <div class="player-card">
-            <video id="player" playsinline controls preload="auto">
-                <source src="{stream_url}" type="video/mp4" />
-                <source src="{stream_url}" type="video/webm" />
-                Your browser does not support the video tag.
-            </video>
-        </div>
-        
-        <div class="controls-panel">
-            <a href="{stream_url}" download class="btn btn-primary">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21l-8-9h6V3h4v9h6l-8 9z"/></svg>
-                Download
-            </a>
-            
-            <button onclick="copyCurrentLink()" class="btn">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                Copy URL
-            </button>
+        <div class="glass-panel">
+            <div class="header">
+                <h1>Premium Cinema</h1>
+                <div class="filename-badge" title="{name}">{name}</div>
+            </div>
 
-            <div class="cast-wrapper">
-                <span>Cast to Device</span>
-                <google-cast-launcher></google-cast-launcher>
+            <div class="video-container">
+                <video id="player" playsinline controls preload="auto">
+                    <source src="{stream_url}" type="video/mp4" />
+                    <source src="{stream_url}" type="video/webm" />
+                </video>
+            </div>
+
+            <div class="controls-grid">
+                <a href="{stream_url}" download class="action-btn primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download
+                </a>
+                
+                <button onclick="copyCurrentLink()" class="action-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy Link
+                </button>
+            </div>
+
+            <div class="footer">
+                Powered by Telegram-Stremio • High Fidelity Streaming
             </div>
         </div>
-        
-        <footer class="info-footer">
-            POWERED BY TELEGRAM-STREMIO CORE • ULTRALIGHT STREAMING ENGINE
-        </footer>
     </div>
     
     <script src="https://cdn.plyr.io/3.7.8/plyr.Polyfilled.js"></script>
@@ -370,7 +364,7 @@ async def watch_handler(request: Request, id: str, name: str):
                 controls: [
                     'play-large', 'restart', 'rewind', 'play', 'fast-forward', 
                     'progress', 'current-time', 'duration', 'mute', 'volume', 
-                    'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+                    'captions', 'settings', 'pip', 'airplay', 'google-cast', 'fullscreen'
                 ],
                 settings: ['captions', 'quality', 'speed', 'loop'],
                 speed: {{ selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }}
@@ -393,19 +387,16 @@ async def watch_handler(request: Request, id: str, name: str):
             }});
         }}
 
-        // Chromecast Init
-        window.__onGCastApiAvailable = function(isAvailable) {{
-            if (isAvailable) {{
-                initializeCastApi();
-            }}
-        }};
-
-        function initializeCastApi() {{
-            cast.framework.CastContext.getInstance().setOptions({{
-                receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-                autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-            }});
-        }}
+        // Chromecast Implementation
+        // Plyr handles the session logic automatically when 'google-cast' is in controls
+        window.__onGCastApiAvailable = function(isAvailable) {
+            if (isAvailable) {
+                cast.framework.CastContext.getInstance().setOptions({
+                    receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                    autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                });
+            }
+        };
     </script>
 </body>
 </html>
