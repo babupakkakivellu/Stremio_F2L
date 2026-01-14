@@ -200,15 +200,20 @@ async def link_command_handler(client: Client, message: Message):
         # Generate download link with URL-safe filename (same format as Stremio streaming)
         file_name = file_info["file_name"]  # Already sanitized
         original_name = file_info.get("original_name", file_name)
-        download_link = f"{Telegram.BASE_URL}/dl/{encoded_data}/{file_name}"
         
-        # Send the link to user
+        # Generate both streaming and download links
+        download_link = f"{Telegram.BASE_URL}/dl/{encoded_data}/{file_name}"
+        watch_link = f"{Telegram.BASE_URL}/watch/{encoded_data}/{file_name}"
+        
+        # Send both links to user
         await message.reply_text(
-            "✅ **Your download link is ready!**\n\n"
-            f"📁 **File:** `{original_name}`\n"
-            f"🔗 **Link:** `{download_link}`\n\n"
-            "💡 **Note:** This link will work as long as the file remains in storage.\n"
-            "You can use this link for streaming or downloading.",
+            "✅ **Your links are ready!**\n\n"
+            f"📁 **File:** `{original_name}`\n\n"
+            f"🎬 **Watch Online:**\n`{watch_link}`\n\n"
+            f"📥 **Direct Download:**\n`{download_link}`\n\n"
+            "💡 **Note:** Both links are permanent and will work as long as the file remains in storage.\n"
+            "• Use the Watch link to stream in your browser\n"
+            "• Use the Download link for direct downloads or external players",
             quote=True,
             parse_mode=enums.ParseMode.MARKDOWN,
             disable_web_page_preview=True

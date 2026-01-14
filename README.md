@@ -206,32 +206,39 @@ The `/set` command is used to manually upload a specific Movie or TV show to you
 
 ### `/link` Command Usage
 
-The `/link` command is used to generate **direct download/streaming links** for files you send to the bot privately.
+The `/link` command is used to generate **streaming and download links** for files you send to the bot privately.
 
 **How it works:**
 
 1.  Send a **video file** (MP4, MKV, AVI, etc.) to the bot in a **private message**.
 2.  **Reply to that file message** with `/link`.
-3.  The bot will generate and send you a **permanent download/streaming link**.
+3.  The bot will generate **two links**: one for online streaming and one for direct download.
 
 **Example Flow:**
 
 ```
 You: [Send video file to bot]
-     (No confirmation message - file uploaded silently)
+     (File uploaded silently)
 
 You: /link (reply directly to your file)
-Bot: ✅ Your download link is ready!
+Bot: ✅ Your links are ready!
      📁 File: movie.mkv
-     🔗 Link: https://your-domain.com/dl/abc123/movie.mkv
+     
+     🎬 Watch Online:
+     https://your-domain.com/watch/abc123/movie.mkv
+     
+     📥 Direct Download:
+     https://your-domain.com/dl/abc123/movie.mkv
 ```
 
 **Notes:**
--   Links use the **same high-speed streaming infrastructure** as Stremio.
+-   **Watch link** opens a beautiful HTML5 video player in your browser for instant streaming.
+-   **Download link** is for direct downloads or use in external video players.
+-   Both links use the **same high-speed infrastructure** as Stremio.
 -   Links are **permanent** and don't expire (as long as the file remains in storage).
 -   File info is cached for **1 hour** after upload. After that, you'll need to re-upload.
 -   Filenames in URLs are **automatically sanitized** (spaces replaced with underscores).
--   Links can be used for **direct download** or **streaming** in players.
+
 
 
 
