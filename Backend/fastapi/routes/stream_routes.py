@@ -1,6 +1,7 @@
 import math
 import secrets
 import mimetypes
+import urllib.parse
 from typing import Tuple
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
@@ -93,10 +94,21 @@ async def media_streamer(
     if not file_id.file_name and "/" in mime_type:
         file_name = f"{secrets.token_hex(2)}.{mime_type.split('/')[1]}"
 
+    # Encode filename for Content-Disposition header (RFC 5987)
+    # Use percent-encoding for non-ASCII characters to avoid UnicodeEncodeError
+    try:
+        # Try ASCII encoding first (faster for simple filenames)
+        file_name.encode('ascii')
+        content_disposition = f'inline; filename="{file_name}"'
+    except UnicodeEncodeError:
+        # Use RFC 5987 encoding for non-ASCII filenames
+        encoded_filename = urllib.parse.quote(file_name)
+        content_disposition = f"inline; filename*=UTF-8''{encoded_filename}"
+    
     headers = {
         "Content-Type": mime_type,
         "Content-Length": str(req_length),
-        "Content-Disposition": f'inline; filename="{file_name}"',
+        "Content-Disposition": content_disposition,
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=3600, immutable",
         "Access-Control-Allow-Origin": "*",

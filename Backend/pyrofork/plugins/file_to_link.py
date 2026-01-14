@@ -217,15 +217,18 @@ async def link_command_handler(client: Client, message: Message):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Send message with inline buttons
+        # Send message with inline buttons AND text links
         await message.reply_text(
-            "✅ **Links Generated Successfully!**\n\n"
-            f"� **{original_name}**\n"
-            f"� **Size:** {file_info.get('file_size_str', 'Unknown')}\n\n"
-            "🎬 Click a button below:",
+            "✅ *Links Generated Successfully!*\n\n"
+            f"📄 *File:* {original_name}\n"
+            f"💾 *Size:* {file_info.get('file_size_str', 'Unknown')}\n\n"
+            "🎬 *Choose an option:*\n\n"
+            f"🌐 *Stream:* `{watch_link}`\n"
+            f"📥 *Download:* `{download_link}`",
             quote=True,
             parse_mode=enums.ParseMode.MARKDOWN,
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
+            disable_web_page_preview=True
         )
         
         LOGGER.info(f"Link generated for user {user_id}: {file_name}")
