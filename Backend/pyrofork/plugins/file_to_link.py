@@ -6,6 +6,8 @@ from Backend.helper.encrypt import encode_string
 from Backend.logger import LOGGER
 from datetime import datetime, timedelta
 from asyncio import sleep as asleep
+import re
+import urllib.parse
 
 # In-memory cache to store user file message mapping
 # Structure: {user_id: {user_msg_id: {"dump_chat_id": int, "dump_msg_id": int, "file_name": str, "timestamp": datetime}}}
@@ -13,6 +15,34 @@ file_cache = {}
 
 # Cache cleanup settings
 CACHE_TTL_HOURS = 1
+
+
+def sanitize_filename(filename):
+    """Make filename URL-safe by replacing spaces and special characters"""
+    # Get file extension
+    name_parts = filename.rsplit('.', 1)
+    if len(name_parts) == 2:
+        name, ext = name_parts
+    else:
+        name = filename
+        ext = ''
+    
+    # Replace spaces with underscores
+    name = name.replace(' ', '_')
+    
+    # Remove or replace special characters, keep alphanumeric, underscore, hyphen, dot
+    name = re.sub(r'[^a-zA-Z0-9._-]', '', name)
+    
+    # Remove multiple consecutive underscores
+    name = re.sub(r'_+', '_', name)
+    
+    # Remove leading/trailing underscores
+    name = name.strip('_')
+    
+    # Reconstruct filename with extension
+    if ext:
+        return f"{name}.{ext}"
+    return name
 
 
 def clean_expired_cache():
@@ -71,19 +101,14 @@ async def file_to_link_handler(client: Client, message: Message):
             )
             return
         
-        # Send processing message
-        status_msg = await message.reply_text(
-            "⏳ **Processing your file...**\n\n"
-            f"📁 File: `{file_name}`\n"
-            f"📊 Size: {get_readable_size(file_size)}",
-            quote=True
-        )
-        
         try:
-            # Forward file to FILE_TO_LINK_DUMP channel
+            # Forward file to FILE_TO_LINK_DUMP channel silently
             forwarded_msg = await message.forward(Telegram.FILE_TO_LINK_DUMP)
             
-            # Store in cache
+            # Sanitize filename for URL
+            url_safe_filename = sanitize_filename(file_name)
+            
+            # Store in cache - map to original message for /link reply
             user_id = message.from_user.id
             if user_id not in file_cache:
                 file_cache[user_id] = {}
@@ -91,28 +116,20 @@ async def file_to_link_handler(client: Client, message: Message):
             file_cache[user_id][message.id] = {
                 "dump_chat_id": str(Telegram.FILE_TO_LINK_DUMP).replace("-100", ""),
                 "dump_msg_id": forwarded_msg.id,
-                "file_name": file_name,
+                "file_name": url_safe_filename,
+                "original_name": file_name,
                 "timestamp": datetime.utcnow()
             }
             
-            # Update status message
-            await status_msg.edit_text(
-                "✅ **File uploaded successfully!**\n\n"
-                f"📁 File: `{file_name}`\n"
-                f"📊 Size: {get_readable_size(file_size)}\n\n"
-                "💡 Reply to this message with `/link` to get the download link.",
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-            
-            LOGGER.info(f"File uploaded by user {user_id}: {file_name}")
+            LOGGER.info(f"File uploaded silently by user {user_id}: {file_name}")
             
         except Exception as e:
             LOGGER.error(f"Error forwarding file to dump channel: {e}")
-            await status_msg.edit_text(
+            await message.reply_text(
                 "❌ **Failed to upload file.**\n\n"
                 f"Error: {str(e)}\n\n"
                 "Please try again or contact the administrator.",
-                parse_mode=enums.ParseMode.MARKDOWN
+                quote=True
             )
     
     except FloodWait as e:
@@ -154,7 +171,7 @@ async def link_command_handler(client: Client, message: Message):
         if not message.reply_to_message:
             await message.reply_text(
                 "⚠️ **Please reply to a file message with this command.**\n\n"
-                "Usage: Reply to your uploaded file with `/link`",
+                "Usage: Send a file to the bot, then reply to that file with `/link`",
                 quote=True
             )
             return
@@ -180,14 +197,15 @@ async def link_command_handler(client: Client, message: Message):
             "msg_id": file_info["dump_msg_id"]
         })
         
-        # Generate download link (same format as Stremio streaming)
-        file_name = file_info["file_name"]
+        # Generate download link with URL-safe filename (same format as Stremio streaming)
+        file_name = file_info["file_name"]  # Already sanitized
+        original_name = file_info.get("original_name", file_name)
         download_link = f"{Telegram.BASE_URL}/dl/{encoded_data}/{file_name}"
         
         # Send the link to user
         await message.reply_text(
             "✅ **Your download link is ready!**\n\n"
-            f"📁 **File:** `{file_name}`\n"
+            f"📁 **File:** `{original_name}`\n"
             f"🔗 **Link:** `{download_link}`\n\n"
             "💡 **Note:** This link will work as long as the file remains in storage.\n"
             "You can use this link for streaming or downloading.",

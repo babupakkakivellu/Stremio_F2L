@@ -211,20 +211,16 @@ The `/link` command is used to generate **direct download/streaming links** for 
 **How it works:**
 
 1.  Send a **video file** (MP4, MKV, AVI, etc.) to the bot in a **private message**.
-2.  The bot will upload the file and send you a confirmation message.
-3.  **Reply to that confirmation message** with `/link`.
-4.  The bot will generate and send you a **permanent download/streaming link**.
+2.  **Reply to that file message** with `/link`.
+3.  The bot will generate and send you a **permanent download/streaming link**.
 
 **Example Flow:**
 
 ```
 You: [Send video file to bot]
-Bot: ✅ File uploaded successfully!
-     📁 File: movie.mkv
-     📊 Size: 1.2 GB
-     💡 Reply to this message with /link to get the download link.
+     (No confirmation message - file uploaded silently)
 
-You: /link (as a reply)
+You: /link (reply directly to your file)
 Bot: ✅ Your download link is ready!
      📁 File: movie.mkv
      🔗 Link: https://your-domain.com/dl/abc123/movie.mkv
@@ -234,7 +230,9 @@ Bot: ✅ Your download link is ready!
 -   Links use the **same high-speed streaming infrastructure** as Stremio.
 -   Links are **permanent** and don't expire (as long as the file remains in storage).
 -   File info is cached for **1 hour** after upload. After that, you'll need to re-upload.
+-   Filenames in URLs are **automatically sanitized** (spaces replaced with underscores).
 -   Links can be used for **direct download** or **streaming** in players.
+
 
 
 
