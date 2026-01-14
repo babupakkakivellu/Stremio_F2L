@@ -118,6 +118,8 @@ async def file_to_link_handler(client: Client, message: Message):
                 "dump_msg_id": forwarded_msg.id,
                 "file_name": url_safe_filename,
                 "original_name": file_name,
+                "file_size": file_size,
+                "file_size_str": get_readable_size(file_size),
                 "timestamp": datetime.utcnow()
             }
             
@@ -217,12 +219,10 @@ async def link_command_handler(client: Client, message: Message):
         
         # Send message with inline buttons
         await message.reply_text(
-            "✅ **Your links are ready!**\n\n"
-            f"📁 **File:** `{original_name}`\n"
-            f"📦 **Size:** `{file_info.get('file_size_str', 'Unknown')}`\n\n"
-            "💡 Choose an option below:\n"
-            "• **Stream Online** - Watch in browser with Cast support\n"
-            "• **Download** - Direct download or use with external players",
+            "✅ **Links Generated Successfully!**\n\n"
+            f"� **{original_name}**\n"
+            f"� **Size:** {file_info.get('file_size_str', 'Unknown')}\n\n"
+            "🎬 Click a button below:",
             quote=True,
             parse_mode=enums.ParseMode.MARKDOWN,
             reply_markup=reply_markup
