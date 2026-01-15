@@ -903,3 +903,153 @@ class Database:
                     "dataSize": db_stats.get("dataSize", 0)
                 })
         return stats
+
+    # -------------------------------
+    # File-to-Link Collection Methods
+    # -------------------------------
+    
+    async def insert_file_to_link(self, file_data: Dict[str, Any]) -> str:
+        """
+        Insert a new file-to-link entry into the database.
+        
+        Args:
+            file_data: Dictionary containing file information
+        
+        Returns:
+            file_id: Unique identifier for the file
+        """
+        current_db_key = f"storage_{self.current_db_index}"
+        file_data["uploaded_at"] = datetime.utcnow()
+        file_data["last_accessed"] = datetime.utcnow()
+        file_data["access_count"] = 0
+        
+        result = await self.dbs[current_db_key]["file_to_link"].insert_one(file_data)
+        LOGGER.info(f"Inserted file_to_link entry: {file_data.get('file_name')}")
+        return str(result.inserted_id)
+    
+    async def get_file_by_hash(self, file_hash: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a file by its hash to check for duplicates.
+        
+        Args:
+            file_hash: Hash of the file
+        
+        Returns:
+            File document if found, None otherwise
+        """
+        for i in range(1, self.current_db_index + 1):
+            db_key = f"storage_{i}"
+            result = await self.dbs[db_key]["file_to_link"].find_one({"file_hash": file_hash})
+            if result:
+                return convert_objectid_to_str(result)
+        return None
+    
+    async def get_file_by_encoded_id(self, dump_chat_id: str, dump_msg_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a file by its Telegram message location.
+        
+        Args:
+            dump_chat_id: Telegram chat ID where file is stored
+            dump_msg_id: Telegram message ID
+        
+        Returns:
+            File document if found, None otherwise
+        """
+        for i in range(1, self.current_db_index + 1):
+            db_key = f"storage_{i}"
+            result = await self.dbs[db_key]["file_to_link"].find_one({
+                "dump_chat_id": dump_chat_id,
+                "dump_msg_id": dump_msg_id
+            })
+            if result:
+                return convert_objectid_to_str(result)
+        return None
+    
+    async def get_user_files(self, user_id: int, page: int = 1, page_size: int = 20) -> Tuple[List[Dict], int]:
+        """
+        Get all files uploaded by a specific user with pagination.
+        
+        Args:
+            user_id: Telegram user ID
+            page: Page number (1-indexed)
+            page_size: Number of items per page
+        
+        Returns:
+            Tuple of (files list, total count)
+        """
+        filter_dict = {"user_id": user_id}
+        sort_dict = {"uploaded_at": DESCENDING}
+        
+        results, _, total_count = await self._paginate_collection(
+            "file_to_link",
+            sort_dict,
+            page,
+            page_size,
+            filter_dict
+        )
+        
+        return results, total_count
+    
+    async def update_file_access(self, file_id: str):
+        """
+        Update last_accessed time and increment access_count.
+        
+        Args:
+            file_id: MongoDB ObjectId of the file
+        """
+        for i in range(1, self.current_db_index + 1):
+            db_key = f"storage_{i}"
+            result = await self.dbs[db_key]["file_to_link"].update_one(
+                {"_id": ObjectId(file_id)},
+                {
+                    "$set": {"last_accessed": datetime.utcnow()},
+                    "$inc": {"access_count": 1}
+                }
+            )
+            if result.modified_count > 0:
+                LOGGER.info(f"Updated access for file_id: {file_id}")
+                return
+    
+    async def delete_file_to_link(self, file_id: str, user_id: int) -> bool:
+        """
+        Delete a file-to-link entry (user must own the file).
+        
+        Args:
+            file_id: MongoDB ObjectId of the file
+            user_id: Telegram user ID (for ownership verification)
+        
+        Returns:
+            True if deleted, False otherwise
+        """
+        for i in range(1, self.current_db_index + 1):
+            db_key = f"storage_{i}"
+            result = await self.dbs[db_key]["file_to_link"].delete_one({
+                "_id": ObjectId(file_id),
+                "user_id": user_id  # Ensure user owns the file
+            })
+            if result.deleted_count > 0:
+                LOGGER.info(f"Deleted file_to_link entry: {file_id} by user {user_id}")
+                return True
+        return False
+    
+    async def get_file_to_link_stats(self) -> Dict[str, int]:
+        """
+        Get statistics for file-to-link uploads.
+        
+        Returns:
+            Dictionary with file count and total size
+        """
+        total_files = 0
+        total_size = 0
+        
+        for i in range(1, self.current_db_index + 1):
+            db_key = f"storage_{i}"
+            files = await self.dbs[db_key]["file_to_link"].find({}).to_list(length=None)
+            total_files += len(files)
+            total_size += sum(f.get("file_size", 0) for f in files)
+        
+        return {
+            "total_files": total_files,
+            "total_size": total_size,
+            "total_size_gb": round(total_size / (1024**3), 2)
+        }
