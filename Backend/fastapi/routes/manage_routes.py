@@ -5,13 +5,13 @@ from typing import Optional
 import secrets
 
 from Backend.config import Telegram
-from Backend.helper.database import Database
-from Backend.pyrofork.bot import StreamBot
 from Backend.logger import LOGGER
 
 router = APIRouter(tags=["File Management"])
 security = HTTPBasic()
-db = Database()
+
+# Import the global database instance
+from Backend.fastapi.routes.template_routes import db
 
 
 def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
