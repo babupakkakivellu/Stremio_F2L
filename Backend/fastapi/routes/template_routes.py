@@ -61,12 +61,6 @@ async def dashboard_page(request: Request, _: bool = Depends(require_auth)):
         total_movies = sum(stat.get("movie_count", 0) for stat in db_stats)
         total_tv_shows = sum(stat.get("tv_count", 0) for stat in db_stats)
         
-        # Get file-to-link stats
-        try:
-            file_stats = await db.get_file_to_link_stats()
-        except Exception:
-            file_stats = {"total_files": 0, "total_size": 0, "total_size_gb": 0}
-        
         system_stats = {
             "server_status": "running",
             "uptime": get_readable_time(time() - StartTime),
@@ -83,9 +77,7 @@ async def dashboard_page(request: Request, _: bool = Depends(require_auth)):
             "tv_shows": total_tv_shows,
             "databases": db_stats,
             "total_databases": len(db_stats),
-            "current_db_index": db.current_db_index,
-            # File-to-Link stats
-            "file_to_link": file_stats
+            "current_db_index": db.current_db_index
         }
     except Exception as e:
         print(f"Dashboard error: {e}")

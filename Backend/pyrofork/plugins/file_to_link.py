@@ -3,21 +3,18 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import FloodWait
 from Backend.config import Telegram
 from Backend.helper.encrypt import encode_string
-from Backend.helper.database import Database
-from Backend.pyrofork.bot import multi_clients, work_loads
 from Backend.logger import LOGGER
 from datetime import datetime, timedelta
 from asyncio import sleep as asleep
 import re
 import urllib.parse
-import hashlib
 
-# Database instance for persistent storage
-db = Database()
+# In-memory cache to store user file message mapping
+# Structure: {user_id: {user_msg_id: {"dump_chat_id": int, "dump_msg_id": int, "file_name": str, "timestamp": datetime}}}
+file_cache = {}
 
-# Temporary cache for /link command (maps user message to database ID)
-# Structure: {user_id: {user_msg_id: file_db_id}}
-temp_cache = {}
+# Cache cleanup settings
+CACHE_TTL_HOURS = 1
 
 
 def sanitize_filename(filename):
@@ -46,31 +43,6 @@ def sanitize_filename(filename):
     if ext:
         return f"{name}.{ext}"
     return name
-
-
-async def calculate_file_hash(client: Client, message: Message) -> str:
-    """
-    Calculate SHA256 hash of a file for duplicate detection.
-    Only reads first 10MB for speed.
-    
-    Args:
-        client: Pyrogram client
-        message: Message containing the file
-    
-    Returns:
-        SHA256 hash string
-    """
-    file = message.video or message.document
-    file_id = message.video.file_id if message.video else message.document.file_id
-    
-    # Read first 10MB for hash calculation (fast duplicate detection)
-    chunk_size = 10 * 1024 * 1024  # 10MB
-    hasher = hashlib.sha256()
-    
-    async for chunk in client.stream_media(file_id, limit=chunk_size):
-        hasher.update(chunk)
-    
-    return hasher.hexdigest()
 
 
 def clean_expired_cache():
@@ -130,90 +102,33 @@ async def file_to_link_handler(client: Client, message: Message):
             return
         
         try:
+            # Forward file to FILE_TO_LINK_DUMP channel silently
+            forwarded_msg = await message.forward(Telegram.FILE_TO_LINK_DUMP)
+            
+            # Sanitize filename for URL
+            url_safe_filename = sanitize_filename(file_name)
+            
+            # Store in cache - map to original message for /link reply
             user_id = message.from_user.id
+            if user_id not in file_cache:
+                file_cache[user_id] = {}
             
-            # Step 1: Calculate file hash for duplicate detection
-            progress_msg = await message.reply_text("🔄 Processing file...", quote=True)
+            file_cache[user_id][message.id] = {
+                "dump_chat_id": str(Telegram.FILE_TO_LINK_DUMP).replace("-100", ""),
+                "dump_msg_id": forwarded_msg.id,
+                "file_name": url_safe_filename,
+                "original_name": file_name,
+                "file_size": file_size,
+                "file_size_str": get_readable_size(file_size),
+                "timestamp": datetime.utcnow()
+            }
             
-            # Get least loaded client for upload (load balancing)
-            index = min(work_loads, key=work_loads.get)
-            upload_client = multi_clients[index]
-            work_loads[index] += 1
-            
-            try:
-                file_hash = await calculate_file_hash(upload_client, message)
-                
-                # Step 2: Check for duplicate
-                existing_file = await db.get_file_by_hash(file_hash)
-                
-                if existing_file:
-                    # Duplicate found - return existing link
-                    await progress_msg.delete()
-                    
-                    # Store in temp_cache for /link command
-                    if user_id not in temp_cache:
-                        temp_cache[user_id] = {}
-                    temp_cache[user_id][message.id] = existing_file["_id"]
-                    
-                    # Update access stats
-                    await db.update_file_access(existing_file["_id"])
-                    
-                    LOGGER.info(f"Duplicate file detected for user {user_id}: {file_name}")
-                    
-                    await message.reply_text(
-                        "✅ *File already exists!*\n\n"
-                        f"📄 *File:* {existing_file['original_name']}\n"
-                        f"💾 *Size:* {existing_file['file_size_str']}\n\n"
-                        "🔄 *Using existing upload*\n"
-                        "Reply with `/link` to get your links.",
-                        quote=True,
-                        parse_mode=enums.ParseMode.MARKDOWN
-                    )
-                    return
-                
-                # Step 3: No duplicate - proceed with upload
-                await progress_msg.edit_text("🔄 Uploading to storage...")
-                
-                # Forward file to FILE_TO_LINK_DUMP channel using load-balanced client
-                forwarded_msg = await upload_client.forward_messages(
-                    chat_id=Telegram.FILE_TO_LINK_DUMP,
-                    from_chat_id=message.chat.id,
-                    message_ids=message.id
-                )
-                
-                # Sanitize filename for URL
-                url_safe_filename = sanitize_filename(file_name)
-                
-                # Step 4: Store in database
-                file_data = {
-                    "user_id": user_id,
-                    "dump_chat_id": str(Telegram.FILE_TO_LINK_DUMP).replace("-100", ""),
-                    "dump_msg_id": forwarded_msg.id,
-                    "file_name": url_safe_filename,
-                    "original_name": file_name,
-                    "file_size": file_size,
-                    "file_size_str": get_readable_size(file_size),
-                    "file_hash": file_hash
-                }
-                
-                file_db_id = await db.insert_file_to_link(file_data)
-                
-                # Store in temp_cache for /link command
-                if user_id not in temp_cache:
-                    temp_cache[user_id] = {}
-                temp_cache[user_id][message.id] = file_db_id
-                
-                await progress_msg.delete()
-                LOGGER.info(f"File uploaded by user {user_id}: {file_name} (hash: {file_hash[:8]}...)")
-                
-            finally:
-                # Always decrement workload
-                work_loads[index] -= 1
+            LOGGER.info(f"File uploaded silently by user {user_id}: {file_name}")
             
         except Exception as e:
-            LOGGER.error(f"Error processing file: {e}")
+            LOGGER.error(f"Error forwarding file to dump channel: {e}")
             await message.reply_text(
-                "❌ **Failed to process file.**\n\n"
+                "❌ **Failed to upload file.**\n\n"
                 f"Error: {str(e)}\n\n"
                 "Please try again or contact the administrator.",
                 quote=True
@@ -266,37 +181,17 @@ async def link_command_handler(client: Client, message: Message):
         replied_msg = message.reply_to_message
         user_id = message.from_user.id
         
-        
-        # Check if file info exists in temp_cache
-        if user_id not in temp_cache or replied_msg.id not in temp_cache[user_id]:
+        # Check if file info exists in cache
+        if user_id not in file_cache or replied_msg.id not in file_cache[user_id]:
             await message.reply_text(
-                "⚠️ **File not found.**\n\n"
-                "Please upload the file first, then reply to it with `/link`",
+                "⚠️ **File not found or link expired.**\n\n"
+                f"Links expire after {CACHE_TTL_HOURS} hour(s). Please upload the file again.",
                 quote=True
             )
             return
         
-        # Get file_db_id from temp_cache
-        file_db_id = temp_cache[user_id][replied_msg.id]
-        
-        # Retrieve full file info from database
-        file_info = None
-        for i in range(1, db.current_db_index + 1):
-            db_key = f"storage_{i}"
-            from bson import ObjectId
-            result = await db.dbs[db_key]["file_to_link"].find_one({"_id": ObjectId(file_db_id)})
-            if result:
-                from Backend.helper.database import convert_objectid_to_str
-                file_info = convert_objectid_to_str(result)
-                break
-        
-        if not file_info:
-            await message.reply_text(
-                "⚠️ **File not found in database.**\n\n"
-                "Please upload the file again.",
-                quote=True
-            )
-            return
+        # Get file info from cache
+        file_info = file_cache[user_id][replied_msg.id]
         
         # Create encoded string for the link
         encoded_data = await encode_string({
@@ -304,8 +199,8 @@ async def link_command_handler(client: Client, message: Message):
             "msg_id": file_info["dump_msg_id"]
         })
         
-        # Generate download link with URL-safe filename
-        file_name = file_info["file_name"]
+        # Generate download link with URL-safe filename (same format as Stremio streaming)
+        file_name = file_info["file_name"]  # Already sanitized
         original_name = file_info.get("original_name", file_name)
         
         # Generate both streaming and download links
