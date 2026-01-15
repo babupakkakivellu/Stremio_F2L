@@ -28,6 +28,17 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
     return credentials.username
 
 
+@router.get("/manage/test")
+async def test_endpoint():
+    """Test endpoint to verify routing works"""
+    return JSONResponse(content={
+        "success": True,
+        "message": "File management routes are working!",
+        "db_connected": db is not None and hasattr(db, 'dbs'),
+        "db_index": db.current_db_index if db else None
+    })
+
+
 @router.get("/manage/files", response_class=HTMLResponse)
 async def manage_files_page(request: Request, username: str = Depends(verify_admin)):
     """
